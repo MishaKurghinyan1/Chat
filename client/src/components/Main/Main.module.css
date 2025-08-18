@@ -1,0 +1,238 @@
+.main {
+  display: flex;
+  width: 100%;
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background-color: white;
+  height: 100vh;
+}
+
+
+.date {
+  color: #101d15;
+}
+
+.dialogBg {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background: rgba(0, 0, 0, 0.15);
+  backdrop-filter: blur(5px);
+  z-index: 999;
+}
+
+.dialogue {
+  display: flex;
+  justify-content: center;
+  flex-direction: column;
+  align-items: center;
+  background: #fefefe;
+  border-radius: 5px;
+  border: none;
+  padding: 20px;
+  min-width: 300px;
+  min-height: 250px;
+}
+
+.messageDialog {
+  font-family: "Roboto";
+  font-weight: 550;
+}
+
+.yes,
+.no {
+  width: 5rem;
+  padding: 10px;
+  margin: 1rem;
+  border-radius: 5px;
+  cursor: pointer;
+  border: none;
+  color: white;
+  font-family: "Roboto";
+  font-weight: 550;
+  transition: all 0.1s ease-in-out;
+}
+
+.yes {
+  background-color: #df7878;
+}
+
+.no {
+  background-color: rgb(120, 223, 162);
+}
+
+.yes:hover,
+.no:hover {
+  filter: brightness(0.9);
+}
+
+.container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+.title {
+  font-family: "Roboto";
+  text-align: center;
+  font-size: 6rem;
+  font-weight: 700;
+  margin: 1rem;
+  color: #333;
+}
+
+.chats {
+  padding: 3rem;
+  display: flex;
+  position: relative;
+  flex-direction: row;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  background: #d1f3de;
+  width: 500px;
+  margin: 2rem;
+  border-radius: 10px;
+  transition: all 0.1s ease-in-out;
+}
+
+.chats:hover {
+  transform: scale(1.05);
+  box-shadow: 0 0 10px 0 rgba(0, 0, 0, 0.2);
+}
+
+.chatName {
+  font-size: 36px;
+  width: auto;
+  font-family: "Roboto";
+  text-align: left;
+  font-size: 1.5rem;
+  font-weight: 450;
+  color: #01300e;
+  font-weight: 600;
+}
+
+.flex-break {
+  flex-basis: 100%;
+  height: 15px;
+}
+
+.author {
+  font-size: 36px;
+  width: auto;
+  font-family: "Roboto";
+  text-align: right;
+  font-size: 1.5rem;
+  font-weight: 450;
+  color: #293829;
+}
+
+.email {
+  font-family: "Roboto";
+  text-align: center;
+  font-size: 2rem;
+  font-weight: 450;
+  color: #7a7a7a;
+  margin: 1rem;
+}
+
+.logoutCont {
+  width: 99vw;
+  display: flex;
+  justify-content: flex-start;
+  align-items: center;
+}
+
+.logout {
+  position: absolute;
+  background-color: #ff8c8c;
+  margin: 1rem 0.5rem;
+  padding: 15px;
+  top: 1rem;
+  left: 1rem;
+  border-radius: 5%;
+  border: none;
+  cursor: pointer;
+  width: auto;
+  height: auto;
+  transition: all 0.1s ease-in-out;
+}
+.logout:hover {
+  background-color: #ff8080;
+}
+
+.editButton {
+  background: #ffe263;
+  width: auto;
+  height: auto;
+  transition: all 0.1s ease-in-out;
+}
+
+.editButton:hover {
+  filter: brightness(80%);
+  box-shadow: 0 0 10px 0 rgba(0, 0, 0, 0.2);
+}
+.deleteButton {
+  background: #ffb7b7;
+  width: auto;
+  height: auto;
+  transition: all 0.1s ease-in-out;
+}
+
+.joinButton {
+  padding: 20px;
+  font-size: 16px;
+  width: auto;
+  background: #59df95;
+  transition: all 0.1s ease-in-out;
+}
+
+.joinButton:hover {
+  filter: brightness(80%);
+  box-shadow: 0 0 10px 0 rgba(0, 0, 0, 0.2);
+}
+
+.deleteButton:hover {
+  filter: brightness(80%);
+  box-shadow: 0 0 10px 0 rgba(0, 0, 0, 0.2);
+}
+
+.addChat {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background-color: #59df95;
+  margin: 1rem 0.5rem;
+  padding: 15px 1rem;
+  border-radius: 5px;
+  border: none;
+  cursor: pointer;
+  width: 130px;
+  height: 50px;
+  cursor: pointer;
+  transition: all 0.1s ease-in-out;
+}
+
+.addChat:hover {
+  background-color: #3d9665;
+}
+
+.addChatButton {
+  font-family: "Roboto";
+  cursor: pointer;
+  font-size: 50px;
+  color: rgb(227, 255, 240);
+  border: none;
+  background: none;
+}
