@@ -19,7 +19,6 @@ export default function Chat() {
   const navigate = useNavigate();
   const { search } = useLocation();
 
-  // --- State ---
   const [send, setSend] = useState("");
   const [isOpen, setOpen] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -27,14 +26,12 @@ export default function Chat() {
   const [usersCount, setUsersCount] = useState();
   const [showLoading, setShowLoading] = useState(true);
 
-  // --- Refs ---
   const emojiRef = useRef(null);
   const textareaRef = useRef(null);
   const socketChatRef = useRef(null);
   const messagesEndRef = useRef(null);
   const socketMessageRef = useRef(null);
 
-  // --- URL Params ---
   const [uriParams] = useSearchParams();
   const name = uriParams.get("name");
   const room = uriParams.get("room");
@@ -43,7 +40,6 @@ export default function Chat() {
 
   const token = localStorage.getItem("token");
 
-  // --- Socket Connections ---
   useEffect(() => {
     socketChatRef.current = io("http://localhost:8000/chat", {
       auth: { token },
@@ -77,7 +73,6 @@ export default function Chat() {
     return () => socketMessageRef.current.off("newMessage", handleNewMessage);
   }, []);
 
-  // --- Emoji Picker Outside Click ---
   useEffect(() => {
     function handleClickOutside(e) {
       if (emojiRef.current && !emojiRef.current.contains(e.target)) {
@@ -88,18 +83,15 @@ export default function Chat() {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, [isOpen]);
 
-  // --- Scroll to bottom on new messages ---
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
-  // --- Loading timeout ---
   useEffect(() => {
     const timer = setTimeout(() => setShowLoading(false), 3000);
     return () => clearTimeout(timer);
   }, []);
 
-  // --- Emoji Picker Handler & Memo ---
   const handleEmojiClick = useCallback(
     (emoji) => setSend((prev) => prev + emoji.emoji),
     []
@@ -150,7 +142,6 @@ export default function Chat() {
     [isOpen, handleEmojiClick]
   );
 
-  // --- Handlers ---
   const handleChange = (e) => {
     setSend(e.target.value);
     if (textareaRef.current && !textareaRef.current._resizeFrame) {
@@ -182,7 +173,6 @@ export default function Chat() {
     setSend("");
   };
 
-  // --- Early return for loading ---
   if (loading || showLoading) return <Loading />;
 
   return (
