@@ -1,4 +1,4 @@
-import { useContext, useState } from "react";
+import { useContext, useEffect, useState } from "react";
 import styles from "./Login.module.css";
 import { Link, useNavigate } from "react-router-dom";
 import { ApiContext } from "../ApiComponent/ApiProvider";
@@ -8,17 +8,23 @@ export default function Login() {
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const navigate = useNavigate();
-  const { apiFetch } = useContext(ApiContext);
+  const { apiFetch, login, token } = useContext(ApiContext);
+
+  // Redirect if already logged in
+  useEffect(() => {
+    if (token) {
+      navigate("/");
+    }
+  }, [token, navigate]);
 
   async function handleSubmit(event) {
     event.preventDefault();
     setError("");
+
     try {
       const res = await apiFetch("http://localhost:8000/auth/login", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
+        headers: { "Content-Type": "application/json" },
         credentials: "include",
         body: JSON.stringify({ email, password }),
       });
@@ -29,8 +35,8 @@ export default function Login() {
         return;
       }
 
-      localStorage.setItem("token", res.accessToken);
-
+      // ✅ Use context login
+      login(res.accessToken);
       setEmail("");
       setPassword("");
       navigate("/");
@@ -64,6 +70,7 @@ export default function Login() {
             Login
           </button>
         </div>
+
         {error &&
           (Array.isArray(error) ? (
             error.map((err, i) => (

@@ -1,19 +1,36 @@
-import React, {
-  useCallback,
-  useEffect,
-  useMemo,
-  useRef,
-  useState,
-} from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
+import ReactDOM from "react-dom";
 import styles from "./Chat.module.css";
 import sendLogo from "/send.png";
-import { useLocation, useNavigate, useSearchParams } from "react-router-dom";
-import logoutIcon from "/logout.png";
-import { io } from "socket.io-client";
-import Loading from "../Loading/Loading";
 import emojiIcon from "/smile.png";
+import logoutIcon from "/logout.png";
+import { useLocation, useNavigate, useSearchParams } from "react-router-dom";
+import { io } from "socket.io-client";
 import EmojiPicker from "emoji-picker-react";
+import Loading from "../Loading/Loading";
 import { sortByDate } from "../../utils/sort-by-date";
+
+// Memoized individual message
+const MessageItem = React.memo(({ msg, isMe }) => (
+  <div className={isMe ? styles.messageWrapperMe : styles.messageWrapperOther}>
+    <div className={styles.messageItem}>
+      <p className={styles.messageSender}>
+        {isMe ? "You" : msg.sender.username}
+      </p>
+      <h3 className={styles.messageContent}>{msg.content}</h3>
+    </div>
+  </div>
+));
+
+// Memoized messages list
+const MessagesList = React.memo(({ messages, name }) => (
+  <>
+    {messages.map((msg) => {
+      const isMe = msg.sender.username === name;
+      return <MessageItem key={msg.id} msg={msg} isMe={isMe} />;
+    })}
+  </>
+));
 
 export default function Chat() {
   const navigate = useNavigate();
@@ -23,8 +40,7 @@ export default function Chat() {
   const [isOpen, setOpen] = useState(false);
   const [loading, setLoading] = useState(true);
   const [messages, setMessages] = useState([]);
-  const [usersCount, setUsersCount] = useState();
-  const [showLoading, setShowLoading] = useState(true);
+  const [usersCount, setUsersCount] = useState(0);
 
   const emojiRef = useRef(null);
   const textareaRef = useRef(null);
@@ -37,9 +53,9 @@ export default function Chat() {
   const room = uriParams.get("room");
   const chat = uriParams.get("chat");
   const user = uriParams.get("user");
-
   const token = localStorage.getItem("token");
 
+  // Initialize sockets
   useEffect(() => {
     socketChatRef.current = io("http://localhost:8000/chat", {
       auth: { token },
@@ -48,98 +64,57 @@ export default function Chat() {
       auth: { token },
     });
 
-    socketChatRef.current.emit("join", { room: chat });
+    socketChatRef.current.emit("join", { room: chat, userID: user });
     socketMessageRef.current.emit("join", { room: chat });
 
     socketChatRef.current.on("joined", ({ chat, usersCount }) => {
       setUsersCount(usersCount);
-      const sortedMessages = sortByDate(chat.messages);
+      // Only keep last 100 messages to improve performance
+      const sortedMessages = sortByDate(chat.messages).slice(-100);
       setMessages(sortedMessages || []);
       setLoading(false);
+    });
+
+    socketChatRef.current.on("usersCountUpdated", ({ usersCount }) => {
+      setUsersCount(usersCount);
     });
 
     return () => {
       socketChatRef.current.disconnect();
       socketMessageRef.current.disconnect();
     };
-  }, [search, token, chat]);
+  }, [search, token, chat, user]);
 
+  // Listen for new messages
   useEffect(() => {
     if (!socketMessageRef.current) return;
-
-    const handleNewMessage = (msg) => setMessages((prev) => [...prev, msg]);
-
+    const handleNewMessage = (msg) =>
+      setMessages((prev) => [...prev.slice(-99), msg]); // keep last 100 messages
     socketMessageRef.current.on("newMessage", handleNewMessage);
     return () => socketMessageRef.current.off("newMessage", handleNewMessage);
   }, []);
 
+  // Close emoji picker when clicking outside
   useEffect(() => {
     function handleClickOutside(e) {
-      if (emojiRef.current && !emojiRef.current.contains(e.target)) {
+      if (emojiRef.current && !emojiRef.current.contains(e.target))
         setOpen(false);
-      }
     }
     if (isOpen) document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, [isOpen]);
 
+  // Scroll throttled with requestAnimationFrame
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    const id = requestAnimationFrame(() => {
+      messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    });
+    return () => cancelAnimationFrame(id);
   }, [messages]);
-
-  useEffect(() => {
-    const timer = setTimeout(() => setShowLoading(false), 3000);
-    return () => clearTimeout(timer);
-  }, []);
 
   const handleEmojiClick = useCallback(
     (emoji) => setSend((prev) => prev + emoji.emoji),
     []
-  );
-
-  const MessagesList = React.memo(({ messages, name }) => {
-    return (
-      <>
-        {messages.map((msg) => {
-          const isMe = msg.sender.username === name;
-          return (
-            <div
-              key={msg.id}
-              style={{
-                display: "flex",
-                justifyContent: isMe ? "flex-end" : "flex-start",
-                padding: "5px 10px",
-              }}
-            >
-              <div className={styles.messageItem}>
-                <p className={styles.messageSender}>
-                  {isMe ? "You" : msg.sender.username}
-                </p>
-                <h3 className={styles.messageContent}>{msg.content}</h3>
-              </div>
-            </div>
-          );
-        })}
-      </>
-    );
-  });
-
-  const emojiPicker = useMemo(
-    () => (
-      <div
-        ref={emojiRef}
-        style={{
-          position: "absolute",
-          bottom: "8%",
-          right: 0,
-          zIndex: 100,
-          display: isOpen ? "block" : "none",
-        }}
-      >
-        <EmojiPicker onEmojiClick={handleEmojiClick} />
-      </div>
-    ),
-    [isOpen, handleEmojiClick]
   );
 
   const handleChange = (e) => {
@@ -163,17 +138,15 @@ export default function Chat() {
   const handleSubmit = (e) => {
     e.preventDefault();
     if (!send.trim()) return;
-
     socketMessageRef.current.emit("addMessage", {
       senderId: user,
       content: send,
       chatId: chat,
     });
-
     setSend("");
   };
 
-  if (loading || showLoading) return <Loading />;
+  if (loading) return <Loading />;
 
   return (
     <div className={styles.chatContainer}>
@@ -202,13 +175,28 @@ export default function Chat() {
         />
         <button
           type="button"
-          onClick={() => setOpen(!isOpen)}
+          onClick={() => setOpen((prev) => !prev)}
           style={{ background: "none", border: "none", cursor: "pointer" }}
         >
           <img src={emojiIcon} alt="emoji" width={25} height={25} />
         </button>
 
-        {emojiPicker}
+        {/* Emoji picker mounted once, visibility controlled by display */}
+        {ReactDOM.createPortal(
+          <div
+            ref={emojiRef}
+            style={{
+              position: "absolute",
+              bottom: "8%",
+              right: 0,
+              zIndex: 100,
+              display: isOpen ? "block" : "none",
+            }}
+          >
+            <EmojiPicker onEmojiClick={handleEmojiClick} />
+          </div>,
+          document.body
+        )}
 
         <button type="submit">
           <img src={sendLogo} alt="send" width="30" height="30" />

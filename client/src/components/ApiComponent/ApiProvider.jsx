@@ -1,4 +1,4 @@
-import React, { createContext, useEffect, useState } from "react";
+import React, { createContext, useEffect, useState, useRef } from "react";
 
 const parseJwt = (token) => {
   try {
@@ -12,29 +12,56 @@ export const ApiContext = createContext();
 
 export const ApiProvider = ({ children }) => {
   const [token, setToken] = useState(localStorage.getItem("token"));
+  const refreshTimeout = useRef(null);
+
+  const clearScheduledRefresh = () => {
+    if (refreshTimeout.current) {
+      clearTimeout(refreshTimeout.current);
+      refreshTimeout.current = null;
+    }
+  };
+
+  const login = (accessToken) => {
+    localStorage.setItem("token", accessToken);
+    setToken(accessToken);
+    scheduleRefresh(accessToken);
+  };
+
+  const logout = () => {
+    clearScheduledRefresh();
+    localStorage.removeItem("token");
+    setToken(null);
+    window.location.href = "/login";
+  };
 
   const refreshToken = async () => {
-    const res = await fetch("http://localhost:8000/auth/refresh", {
-      method: "POST",
-      credentials: "include",
-    });
-    if (!res.ok) {
-      localStorage.removeItem("token");
-      window.location.href = "/login";
+    try {
+      const res = await fetch("http://localhost:8000/auth/refresh", {
+        method: "POST",
+        credentials: "include",
+      });
+      if (!res.ok) throw new Error("Unauthorized");
+
+      const data = await res.json().catch(() => {
+        throw new Error("Invalid JSON");
+      });
+      if (!data?.accessToken) throw new Error("No access token");
+
+      login(data.accessToken);
+      return data.accessToken;
+    } catch {
+      logout();
       return null;
     }
-    const data = await res.json();
-    localStorage.setItem("token", data.accessToken);
-    setToken(data.accessToken);
-    return data.accessToken;
   };
 
   const scheduleRefresh = (accessToken) => {
+    clearScheduledRefresh();
     const payload = parseJwt(accessToken);
     if (!payload?.exp) return;
 
     const expiresInMs = payload.exp * 1000 - Date.now() - 30_000;
-    setTimeout(async () => {
+    refreshTimeout.current = setTimeout(async () => {
       const newToken = await refreshToken();
       if (newToken) scheduleRefresh(newToken);
     }, expiresInMs);
@@ -42,6 +69,7 @@ export const ApiProvider = ({ children }) => {
 
   useEffect(() => {
     if (token) scheduleRefresh(token);
+    return clearScheduledRefresh;
   }, [token]);
 
   const apiFetch = async (url, options = {}) => {
@@ -56,23 +84,33 @@ export const ApiProvider = ({ children }) => {
 
       options.headers.Authorization = `Bearer ${newToken}`;
       res = await fetch(url, options);
-
       if (res.status === 401) {
-        localStorage.removeItem("token");
-        window.location.href = "/login";
+        logout();
         return;
       }
     }
 
+    // handle 204 No Content or empty response safely
+    if (res.status === 204) return null;
+
+    const text = await res.text();
+    if (!text) return null;
+
     if (!res.ok) {
-      const errData = await res.json().catch(() => ({}));
-      throw errData;
+      try {
+        const errData = JSON.parse(text);
+        throw errData;
+      } catch {
+        throw {};
+      }
     }
 
-    return res.json();
+    return JSON.parse(text);
   };
 
   return (
-    <ApiContext.Provider value={{ apiFetch }}>{children}</ApiContext.Provider>
+    <ApiContext.Provider value={{ apiFetch, login, logout, token }}>
+      {children}
+    </ApiContext.Provider>
   );
 };
