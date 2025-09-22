@@ -103,7 +103,7 @@ export class AuthService {
   }
 
   async logout(res: Response) {
-    this.setCookie(res, '', new Date(0));
+    this.setCookie(res, 'refreshToken', new Date(0));
   }
 
   async validate(id: string) {
@@ -115,11 +115,11 @@ export class AuthService {
   private auth(res: Response, id: string) {
     const { accessToken, refreshToken } = this.generateTokens(id);
 
-    const expires = new Date(
-      Date.now() + parseInt(this.JWT_REFRESH_TOKEN_TTL, 10) * 86400000,
-    );
+    const expires = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
 
     this.setCookie(res, refreshToken, expires);
+
+    console.log('Generated access token:', accessToken);
 
     return { accessToken };
   }

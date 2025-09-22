@@ -12,13 +12,14 @@ import { NotFoundException } from '@nestjs/common';
 
 @WebSocketGateway({
   namespace: 'chat',
-  cors: {
-    origin: 'http://localhost:5173',
-  },
+  cors: { origin: 'http://localhost:5173' },
 })
 export class ChatGateway {
-  private clients = new Set<string>();
+  // roomId -> Map<userId, Set<socketId>>
+  private rooms = new Map<string, Map<string, Set<string>>>();
+
   @WebSocketServer() server: Server;
+
   constructor(private readonly chatService: ChatService) {}
 
   handleConnection(@ConnectedSocket() client: Socket) {
@@ -26,19 +27,74 @@ export class ChatGateway {
   }
 
   handleDisconnect(@ConnectedSocket() client: Socket) {
-    this.clients.delete(client.id);
+    for (const [roomId, users] of this.rooms) {
+      const userId = client.data.userID;
+      if (!userId || !users.has(userId)) continue;
+
+      const sockets = users.get(userId)!;
+      sockets.delete(client.id);
+
+      // remove user only if no more sockets remain
+      if (sockets.size === 0) users.delete(userId);
+
+      // broadcast updated count
+      this.server
+        .to(roomId)
+        .emit('usersCountUpdated', { usersCount: users.size });
+    }
+
     console.log('Client disconnected', client.id);
   }
 
   @SubscribeMessage('join')
   @WsAuthorization()
   async handleJoin(
+    @MessageBody() data: { room: string; userID: string },
+    @ConnectedSocket() client: Socket,
+  ) {
+    client.data.userID = data.userID;
+
+    if (!this.rooms.has(data.room)) this.rooms.set(data.room, new Map());
+    const room = this.rooms.get(data.room)!;
+
+    if (!room.has(data.userID)) room.set(data.userID, new Set());
+    room.get(data.userID)!.add(client.id);
+
+    client.join(data.room);
+
+    const chat = await this.chatService.getChatById(data.room);
+
+    client.emit('joined', { chat, usersCount: room.size });
+
+    this.server
+      .to(data.room)
+      .emit('usersCountUpdated', { usersCount: room.size });
+  }
+
+  @SubscribeMessage('leavingRoom')
+  @WsAuthorization()
+  handleLeave(
     @MessageBody() data: { room: string },
     @ConnectedSocket() client: Socket,
   ) {
-    this.clients.add(client.id);
-    const chat = await this.chatService.getChatById(data.room);
-    client.emit('joined', { chat, usersCount: this.clients.size });
+    const room = this.rooms.get(data.room);
+    if (!room) return;
+
+    const userId = client.data.userID;
+    if (!userId || !room.has(userId)) return;
+
+    const sockets = room.get(userId)!;
+    sockets.delete(client.id);
+
+    if (sockets.size === 0) room.delete(userId);
+
+    client.leave(data.room);
+
+    this.server
+      .to(data.room)
+      .emit('usersCountUpdated', { usersCount: room.size });
+
+    console.log('Client left room', data.room, userId);
   }
 
   @SubscribeMessage('getRoom')
@@ -47,11 +103,5 @@ export class ChatGateway {
     const room = await this.chatService.getChatById(id);
     if (!room) throw new NotFoundException('Room not found');
     this.server.emit('room', room);
-  }
-
-  @SubscribeMessage('leavingRoom')
-  @WsAuthorization()
-  handleLeave(@ConnectedSocket() client: Socket) {
-    console.log('Client left', client.id);
   }
 }
