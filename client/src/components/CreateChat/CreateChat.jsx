@@ -16,14 +16,14 @@ export default function CreateChat() {
       const token = localStorage.getItem("token");
       if (!token) throw new Error("No token");
 
-      const user = await apiFetch("http://localhost:8000/auth/me", {
+      const user = await apiFetch(`${import.meta.env.VITE_API_URL}/auth/me`, {
         method: "GET",
         headers: { Authorization: `Bearer ${token}` },
       });
 
       if (!user?.id) throw new Error("Failed to get user data");
 
-      const res = await apiFetch("http://localhost:8000/chat/create", {
+      const res = await apiFetch(`${import.meta.env.VITE_API_URL}/chat/create`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

@@ -15,13 +15,13 @@ export default function UpdateChat() {
       const token = localStorage.getItem("token");
       if (!token) throw new Error("No token");
 
-      const user = await apiFetch("http://localhost:8000/auth/me", {
+      const user = await apiFetch(`${import.meta.env.VITE_API_URL}/auth/me`, {
         method: "GET",
         headers: { Authorization: `Bearer ${token}` },
       });
       if (!user?.id) throw new Error("Failed to get user data");
 
-      const res = await apiFetch(`http://localhost:8000/chat/rooms/${id}`, {
+      const res = await apiFetch(`${import.meta.env.VITE_API_URL}/chat/rooms/${id}`, {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",

@@ -36,7 +36,7 @@ export const ApiProvider = ({ children }) => {
 
   const refreshToken = async () => {
     try {
-      const res = await fetch("http://localhost:8000/auth/refresh", {
+      const res = await fetch(`${import.meta.env.VITE_API_URL}/auth/refresh`, {
         method: "POST",
         credentials: "include",
       });
@@ -90,7 +90,6 @@ export const ApiProvider = ({ children }) => {
       }
     }
 
-    // handle 204 No Content or empty response safely
     if (res.status === 204) return null;
 
     const text = await res.text();

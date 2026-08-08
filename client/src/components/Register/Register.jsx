@@ -24,7 +24,7 @@ export default function Register() {
     setError("");
 
     try {
-      const res = await apiFetch("http://localhost:8000/auth/register", {
+      const res = await apiFetch(`${import.meta.env.VITE_API_URL}/auth/register`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",

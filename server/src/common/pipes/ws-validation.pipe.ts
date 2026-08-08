@@ -11,7 +11,9 @@ export class WsValidationPipe extends ValidationPipe {
     try {
       return await super.transform(value, metadata);
     } catch (err) {
-      throw new BadRequestException(err.message);
+      if (err instanceof BadRequestException) {
+        throw new BadRequestException(err.message);
+      }
     }
   }
 }

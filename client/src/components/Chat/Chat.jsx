@@ -10,7 +10,6 @@ import EmojiPicker from "emoji-picker-react";
 import Loading from "../Loading/Loading";
 import { sortByDate } from "../../utils/sort-by-date";
 
-// Memoized individual message
 const MessageItem = React.memo(({ msg, isMe }) => (
   <div className={isMe ? styles.messageWrapperMe : styles.messageWrapperOther}>
     <div className={styles.messageItem}>
@@ -22,7 +21,6 @@ const MessageItem = React.memo(({ msg, isMe }) => (
   </div>
 ));
 
-// Memoized messages list
 const MessagesList = React.memo(({ messages, name }) => (
   <>
     {messages.map((msg) => {
@@ -55,12 +53,11 @@ export default function Chat() {
   const user = uriParams.get("user");
   const token = localStorage.getItem("token");
 
-  // Initialize sockets
   useEffect(() => {
-    socketChatRef.current = io("http://localhost:8000/chat", {
+    socketChatRef.current = io(`${import.meta.env.VITE_API_URL}/chat`, {
       auth: { token },
     });
-    socketMessageRef.current = io("http://localhost:8000/messages", {
+    socketMessageRef.current = io(`${import.meta.env.VITE_API_URL}/messages`, {
       auth: { token },
     });
 
@@ -85,7 +82,6 @@ export default function Chat() {
     };
   }, [search, token, chat, user]);
 
-  // Listen for new messages
   useEffect(() => {
     if (!socketMessageRef.current) return;
     const handleNewMessage = (msg) =>
@@ -94,7 +90,6 @@ export default function Chat() {
     return () => socketMessageRef.current.off("newMessage", handleNewMessage);
   }, []);
 
-  // Close emoji picker when clicking outside
   useEffect(() => {
     function handleClickOutside(e) {
       if (emojiRef.current && !emojiRef.current.contains(e.target))
@@ -104,7 +99,6 @@ export default function Chat() {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, [isOpen]);
 
-  // Scroll throttled with requestAnimationFrame
   useEffect(() => {
     const id = requestAnimationFrame(() => {
       messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -114,7 +108,7 @@ export default function Chat() {
 
   const handleEmojiClick = useCallback(
     (emoji) => setSend((prev) => prev + emoji.emoji),
-    []
+    [],
   );
 
   const handleChange = (e) => {
@@ -181,7 +175,6 @@ export default function Chat() {
           <img src={emojiIcon} alt="emoji" width={25} height={25} />
         </button>
 
-        {/* Emoji picker mounted once, visibility controlled by display */}
         {ReactDOM.createPortal(
           <div
             ref={emojiRef}
@@ -195,7 +188,7 @@ export default function Chat() {
           >
             <EmojiPicker onEmojiClick={handleEmojiClick} />
           </div>,
-          document.body
+          document.body,
         )}
 
         <button type="submit">

@@ -36,7 +36,7 @@ export default function Main() {
     const fetchUserAndChats = async () => {
       setLoading(true);
       try {
-        const user = await apiFetch("http://localhost:8000/auth/me", {
+        const user = await apiFetch(`${import.meta.env.VITE_API_URL}/auth/me`, {
           method: "GET",
           headers: { Authorization: `Bearer ${token}` },
         });
@@ -44,7 +44,7 @@ export default function Main() {
         setUsername(user.username || "");
         setEmail(user.email || "");
 
-        const rooms = await apiFetch("http://localhost:8000/chat/rooms", {
+        const rooms = await apiFetch(`${import.meta.env.VITE_API_URL}/chat/rooms`, {
           method: "GET",
           headers: { Authorization: `Bearer ${token}` },
         });
@@ -75,7 +75,7 @@ export default function Main() {
   const handleDeleteConfirm = async () => {
     if (!selectedChatId) return;
     try {
-      await apiFetch(`http://localhost:8000/chat/rooms/${selectedChatId}`, {
+      await apiFetch(`${import.meta.env.VITE_API_URL}/chat/rooms/${selectedChatId}`, {
         method: "DELETE",
         headers: { Authorization: `Bearer ${token}` },
       });
@@ -92,7 +92,7 @@ export default function Main() {
 
   const handleLogout = async () => {
     try {
-      await apiFetch("http://localhost:8000/auth/logout", {
+      await apiFetch(`${import.meta.env.VITE_API_URL}/auth/logout`, {
         method: "POST",
         headers: { Authorization: `Bearer ${token}` },
       });
