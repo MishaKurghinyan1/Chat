@@ -2,13 +2,13 @@ import { DocumentBuilder } from '@nestjs/swagger';
 
 export function getSwaggerConfig() {
   return new DocumentBuilder()
-    .setTitle('Nest Course')
-    .setDescription('This is a course for NestJS')
+    .setTitle('My Chat Application')
+    .setDescription('This is my chat application')
     .setVersion('1.0')
     .addBearerAuth()
     .setContact(
       'Misha',
-      'https://github.com/MishalHamed',
+      'https://github.com/MishaKurghinyan1',
       'minecon291@gmail.com',
     )
     .build();
