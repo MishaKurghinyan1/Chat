@@ -52,7 +52,7 @@ export const ApiProvider = ({ children }) => {
 
   const refreshToken = async () => {
     try {
-      const res = await fetch(`${BASE_URL}/auth/refresh`, {
+      const res = await fetch(`${BASE_URL}/api/auth/refresh`, {
         method: "POST",
         credentials: "include",
       });
