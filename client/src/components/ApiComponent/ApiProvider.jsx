@@ -12,6 +12,8 @@ export const ApiContext = createContext(null);
 
 const BASE_URL = import.meta.env.VITE_API_URL || "";
 
+console.log('BASE_URL:', BASE_URL);
+
 export const ApiProvider = ({ children }) => {
   const [token, setToken] = useState(localStorage.getItem("token"));
   const refreshTimeout = useRef(null);
@@ -52,7 +54,7 @@ export const ApiProvider = ({ children }) => {
 
   const refreshToken = async () => {
     try {
-      const res = await fetch(`${BASE_URL}/api/auth/refresh`, {
+      const res = await fetch(`${BASE_URL}/auth/refresh`, {
         method: "POST",
         credentials: "include",
       });

@@ -31,7 +31,6 @@ export class AuthService {
   ) {
     this.JWT_ACCESS_TOKEN_TTL = this.configService.getOrThrow<string>('JWT_ACCESS_TOKEN_TTL');
     this.JWT_REFRESH_TOKEN_TTL = this.configService.getOrThrow<string>('JWT_REFRESH_TOKEN_TTL');
-    // Safe fallback so missing env doesn't crash bootstrap
     this.COOKIE_DOMAIN = this.configService.get<string>('COOKIE_DOMAIN') || undefined;
   }
 

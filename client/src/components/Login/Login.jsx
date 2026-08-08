@@ -21,7 +21,7 @@ export default function Login() {
     setError([]);
 
     try {
-      const res = await apiFetch("/api/auth/login", {
+      const res = await apiFetch("/auth/login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email, password }),
