@@ -6,11 +6,10 @@ import { ApiContext } from "../ApiComponent/ApiProvider";
 export default function Login() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [error, setError] = useState("");
+  const [error, setError] = useState([]);
   const navigate = useNavigate();
   const { apiFetch, login, token } = useContext(ApiContext);
 
-  // Redirect if already logged in
   useEffect(() => {
     if (token) {
       navigate("/");
@@ -19,7 +18,7 @@ export default function Login() {
 
   async function handleSubmit(event) {
     event.preventDefault();
-    setError("");
+    setError([]);
 
     try {
       const res = await apiFetch(`${import.meta.env.VITE_API_URL}/auth/login`, {
@@ -29,19 +28,23 @@ export default function Login() {
         body: JSON.stringify({ email, password }),
       });
 
-      if (res.statusCode) {
-        const errData = await res.json();
-        setError(errData.message || "Login failed. Please try again.");
+      if (!res) {
+        setError(["Login failed. No response from server."]);
         return;
       }
 
-      // ✅ Use context login
       login(res.accessToken);
       setEmail("");
       setPassword("");
       navigate("/");
     } catch (err) {
-      setError(err.message);
+      console.error("Login error:", err);
+
+      if (Array.isArray(err.message)) {
+        setError(err.message);
+      } else {
+        setError([err.message || "Login failed. Please try again."]);
+      }
     }
   }
 
@@ -71,16 +74,18 @@ export default function Login() {
           </button>
         </div>
 
-        {error &&
-          (Array.isArray(error) ? (
-            error.map((err, i) => (
-              <p key={i} className="error">
-                {err}
-              </p>
-            ))
-          ) : (
-            <p className="error">{error}</p>
-          ))}
+         <div className="errors">
+          {error &&
+            (Array.isArray(error) ? (
+              error.map((err, i) => (
+                <p key={i} className="error">
+                  {err}
+                </p>
+              ))
+            ) : (
+              <p className="error">{error}</p>
+            ))}
+        </div>
 
         <span>
           Don't have an account?{" "}

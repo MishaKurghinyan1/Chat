@@ -70,3 +70,22 @@
   color: white;
   cursor: pointer;
 }
+
+.errors {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  width: 100%;
+  padding: 10px;
+}
+
+.error {
+  width: 100%;
+  padding: 20px;
+  background-color: rgb(177, 6, 6);
+  border-radius: 5px;
+  color: rgb(255, 241, 241);
+  text-align: center;
+}

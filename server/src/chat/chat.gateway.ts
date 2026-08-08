@@ -12,13 +12,18 @@ import { NotFoundException } from '@nestjs/common';
 
 @WebSocketGateway({
   namespace: 'chat',
-  cors: { origin: 'http://localhost:5173' },
+  cors: { 
+    origin: [
+      'http://localhost:5173',
+      'https://client-production-b9fd.up.railway.app'
+    ]
+  },
 })
 export class ChatGateway {
   // roomId -> Map<userId, Set<socketId>>
   private rooms = new Map<string, Map<string, Set<string>>>();
 
-  @WebSocketServer() server: Server;
+  @WebSocketServer() server!: Server;
 
   constructor(private readonly chatService: ChatService) {}
 

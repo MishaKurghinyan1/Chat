@@ -13,11 +13,14 @@ import { WsAuthorization } from 'src/common/decorators';
 @WebSocketGateway({
   namespace: 'messages',
   cors: {
-    origin: 'http://localhost:5173',
+    origin: [
+      'http://localhost:5173',
+      'https://client-production-b9fd.up.railway.app'
+    ],
   },
 })
 export class MessagesGateway {
-  @WebSocketServer() server: Server;
+  @WebSocketServer() server!: Server;
 
   constructor(private readonly chatService: MessagesService) {}
 

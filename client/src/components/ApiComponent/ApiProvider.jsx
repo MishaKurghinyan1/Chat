@@ -98,9 +98,21 @@ export const ApiProvider = ({ children }) => {
     if (!res.ok) {
       try {
         const errData = JSON.parse(text);
+        console.log('apiFetch throwing error object:', errData);
+        // Throw the entire error object so components can access message array
         throw errData;
-      } catch {
-        throw {};
+      } catch (parseError) {
+        // Check if this is a thrown error object (not a JSON parse error)
+        if (parseError.message && parseError.statusCode) {
+          console.log('apiFetch re-throwing error object:', parseError);
+          throw parseError;
+        }
+        console.log('apiFetch parse error, throwing generic error:', parseError);
+        // If JSON parsing fails, throw a generic error with status
+        throw { 
+          message: text || 'Request failed',
+          statusCode: res.status 
+        };
       }
     }
 
