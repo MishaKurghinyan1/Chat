@@ -23,39 +23,22 @@ export default function Register() {
     setError([]);
 
     try {
-      const res = await apiFetch(`${import.meta.env.VITE_API_URL}/auth/register`, {
+      const res = await apiFetch("/auth/register", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        credentials: "include",
         body: JSON.stringify({ username, email, password }),
       });
 
-      if (!res) {
-        setError(["Registration failed. No response from server."]);
-        return;
-      }
-
       login(res.accessToken);
-
-      setUserName("");
-      setEmail("");
-      setPassword("");
       navigate("/");
     } catch (err) {
-      console.error("Registration error:", err);
-      console.error("Error type:", typeof err);
-      console.error("Error.message:", err.message);
-      console.error("Is err.message array?", Array.isArray(err.message));
-
-      if (Array.isArray(err.message)) {
-        console.log("Setting error as array:", err.message);
-        setError(err.message);
+      if (Array.isArray(err.details)) {
+        setError(err.details);
       } else {
-        console.log("Setting error as single string array:", [err.message || "Registration failed. Please try again."]);
         setError([err.message || "Registration failed. Please try again."]);
       }
     }
-  }
+}
 
   return (
     <div className="container">

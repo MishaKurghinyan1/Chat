@@ -8,7 +8,9 @@ const parseJwt = (token) => {
   }
 };
 
-export const ApiContext = createContext();
+export const ApiContext = createContext(null);
+
+const BASE_URL = import.meta.env.VITE_API_URL || "";
 
 export const ApiProvider = ({ children }) => {
   const [token, setToken] = useState(localStorage.getItem("token"));
@@ -34,37 +36,38 @@ export const ApiProvider = ({ children }) => {
     window.location.href = "/login";
   };
 
-  const refreshToken = async () => {
-    try {
-      const res = await fetch(`${import.meta.env.VITE_API_URL}/auth/refresh`, {
-        method: "POST",
-        credentials: "include",
-      });
-      if (!res.ok) throw new Error("Unauthorized");
-
-      const data = await res.json().catch(() => {
-        throw new Error("Invalid JSON");
-      });
-      if (!data?.accessToken) throw new Error("No access token");
-
-      login(data.accessToken);
-      return data.accessToken;
-    } catch {
-      logout();
-      return null;
-    }
-  };
-
   const scheduleRefresh = (accessToken) => {
     clearScheduledRefresh();
     const payload = parseJwt(accessToken);
     if (!payload?.exp) return;
 
     const expiresInMs = payload.exp * 1000 - Date.now() - 30_000;
+    if (expiresInMs <= 0) return;
+
     refreshTimeout.current = setTimeout(async () => {
       const newToken = await refreshToken();
       if (newToken) scheduleRefresh(newToken);
     }, expiresInMs);
+  };
+
+  const refreshToken = async () => {
+    try {
+      const res = await fetch(`${BASE_URL}/auth/refresh`, {
+        method: "POST",
+        credentials: "include",
+      });
+
+      if (!res.ok) return null;
+
+      const data = await res.json().catch(() => null);
+      if (!data?.accessToken) return null;
+
+      login(data.accessToken);
+      return data.accessToken;
+    } catch (err) {
+      console.error("Refresh token error:", err);
+      return null;
+    }
   };
 
   useEffect(() => {
@@ -72,51 +75,53 @@ export const ApiProvider = ({ children }) => {
     return clearScheduledRefresh;
   }, [token]);
 
-  const apiFetch = async (url, options = {}) => {
-    options.headers = { ...options.headers, Authorization: `Bearer ${token}` };
-    options.credentials = "include";
+  const apiFetch = async (endpoint, options = {}) => {
+    const url = endpoint.startsWith("http") ? endpoint : `${BASE_URL}${endpoint}`;
 
-    let res = await fetch(url, options);
+    const headers = {
+      ...options.headers,
+    };
 
-    if (res.status === 401) {
+    if (token) {
+      headers["Authorization"] = `Bearer ${token}`;
+    }
+
+    let res = await fetch(url, {
+      ...options,
+      headers,
+      credentials: "include",
+    });
+
+    if (res.status === 401 && token) {
       const newToken = await refreshToken();
-      if (!newToken) return;
-
-      options.headers.Authorization = `Bearer ${newToken}`;
-      res = await fetch(url, options);
-      if (res.status === 401) {
+      if (!newToken) {
         logout();
-        return;
+        throw new Error("Session expired. Please log in again.");
       }
+
+      headers["Authorization"] = `Bearer ${newToken}`;
+      res = await fetch(url, { ...options, headers, credentials: "include" });
     }
 
     if (res.status === 204) return null;
 
     const text = await res.text();
-    if (!text) return null;
-
-    if (!res.ok) {
-      try {
-        const errData = JSON.parse(text);
-        console.log('apiFetch throwing error object:', errData);
-        // Throw the entire error object so components can access message array
-        throw errData;
-      } catch (parseError) {
-        // Check if this is a thrown error object (not a JSON parse error)
-        if (parseError.message && parseError.statusCode) {
-          console.log('apiFetch re-throwing error object:', parseError);
-          throw parseError;
-        }
-        console.log('apiFetch parse error, throwing generic error:', parseError);
-        // If JSON parsing fails, throw a generic error with status
-        throw { 
-          message: text || 'Request failed',
-          statusCode: res.status 
-        };
-      }
+    let data = null;
+    try {
+      data = text ? JSON.parse(text) : null;
+    } catch {
+      data = text;
     }
 
-    return JSON.parse(text);
+    if (!res.ok) {
+      const message = data?.message || data?.error || `HTTP ${res.status} Error`;
+      const error = new Error(Array.isArray(message) ? message.join(", ") : message);
+      error.status = res.status;
+      error.details = data?.message;
+      throw error;
+    }
+
+    return data;
   };
 
   return (

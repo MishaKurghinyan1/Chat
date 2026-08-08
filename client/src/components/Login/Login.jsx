@@ -21,17 +21,12 @@ export default function Login() {
     setError([]);
 
     try {
-      const res = await apiFetch(`${import.meta.env.VITE_API_URL}/auth/login`, {
+      // Pass the relative route; ApiProvider appends BASE_URL
+      const res = await apiFetch("/auth/login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        credentials: "include",
         body: JSON.stringify({ email, password }),
       });
-
-      if (!res) {
-        setError(["Login failed. No response from server."]);
-        return;
-      }
 
       login(res.accessToken);
       setEmail("");
@@ -40,7 +35,10 @@ export default function Login() {
     } catch (err) {
       console.error("Login error:", err);
 
-      if (Array.isArray(err.message)) {
+      // Handle NestJS validation array or error details attached by ApiProvider
+      if (Array.isArray(err.details)) {
+        setError(err.details);
+      } else if (Array.isArray(err.message)) {
         setError(err.message);
       } else {
         setError([err.message || "Login failed. Please try again."]);
@@ -74,7 +72,7 @@ export default function Login() {
           </button>
         </div>
 
-         <div className="errors">
+        <div className="errors">
           {error &&
             (Array.isArray(error) ? (
               error.map((err, i) => (
