@@ -21,7 +21,7 @@ import { isDev } from 'src/common/utils';
 export class AuthService {
   private readonly JWT_ACCESS_TOKEN_TTL: string;
   private readonly JWT_REFRESH_TOKEN_TTL: string;
-  private readonly COOKIE_DOMAIN: string;
+  private readonly COOKIE_DOMAIN: string | undefined;
 
   constructor(
     @InjectRepository(UserEntity)
@@ -29,25 +29,21 @@ export class AuthService {
     private readonly configService: ConfigService,
     private readonly jwtService: JwtService,
   ) {
-    this.JWT_ACCESS_TOKEN_TTL = this.configService.getOrThrow<string>(
-      'JWT_ACCESS_TOKEN_TTL',
-    );
-    this.JWT_REFRESH_TOKEN_TTL = this.configService.getOrThrow<string>(
-      'JWT_REFRESH_TOKEN_TTL',
-    );
-    this.COOKIE_DOMAIN = this.configService.getOrThrow<string>('COOKIE_DOMAIN');
+    this.JWT_ACCESS_TOKEN_TTL = this.configService.getOrThrow<string>('JWT_ACCESS_TOKEN_TTL');
+    this.JWT_REFRESH_TOKEN_TTL = this.configService.getOrThrow<string>('JWT_REFRESH_TOKEN_TTL');
+    // Safe fallback so missing env doesn't crash bootstrap
+    this.COOKIE_DOMAIN = this.configService.get<string>('COOKIE_DOMAIN') || undefined;
   }
 
   async getOne(id: string) {
     const user = await this.userRepository.findOne({ where: { id } });
     return user ?? { id, username: 'Unknown' };
   }
+
   async registerUser(res: Response, dto: RegisterRequest) {
     const { email, password, username } = dto;
 
-    const existingUser = await this.userRepository.findOne({
-      where: { email },
-    });
+    const existingUser = await this.userRepository.findOne({ where: { email } });
     if (existingUser) {
       throw new ConflictException('User with this email already exists');
     }
@@ -103,7 +99,8 @@ export class AuthService {
   }
 
   async logout(res: Response) {
-    this.setCookie(res, 'refreshToken', new Date(0));
+    // FIX: Clear the cookie with immediate expiration date
+    this.setCookie(res, '', new Date(0));
   }
 
   async validate(id: string) {
@@ -114,26 +111,16 @@ export class AuthService {
 
   private auth(res: Response, id: string) {
     const { accessToken, refreshToken } = this.generateTokens(id);
-
     const expires = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
 
     this.setCookie(res, refreshToken, expires);
-
-    console.log('Generated access token:', accessToken);
-
     return { accessToken };
   }
 
   private generateTokens(id: string) {
     const payload: JwtPayload = { id };
-
-    const accessToken = this.jwtService.sign(payload, {
-      expiresIn: this.JWT_ACCESS_TOKEN_TTL,
-    });
-
-    const refreshToken = this.jwtService.sign(payload, {
-      expiresIn: this.JWT_REFRESH_TOKEN_TTL,
-    });
+    const accessToken = this.jwtService.sign(payload, { expiresIn: this.JWT_ACCESS_TOKEN_TTL });
+    const refreshToken = this.jwtService.sign(payload, { expiresIn: this.JWT_REFRESH_TOKEN_TTL });
 
     return { accessToken, refreshToken };
   }

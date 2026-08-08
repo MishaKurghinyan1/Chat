@@ -21,8 +21,7 @@ export default function Login() {
     setError([]);
 
     try {
-      // Pass the relative route; ApiProvider appends BASE_URL
-      const res = await apiFetch("/auth/login", {
+      const res = await apiFetch("api/auth/login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email, password }),
@@ -35,7 +34,6 @@ export default function Login() {
     } catch (err) {
       console.error("Login error:", err);
 
-      // Handle NestJS validation array or error details attached by ApiProvider
       if (Array.isArray(err.details)) {
         setError(err.details);
       } else if (Array.isArray(err.message)) {

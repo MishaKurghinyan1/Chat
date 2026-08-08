@@ -23,12 +23,11 @@ export default function Register() {
     setError([]);
 
     try {
-      const res = await apiFetch("/auth/register", {
+      const res = await apiFetch("/api/auth/register", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ username, email, password }),
       });
-
       login(res.accessToken);
       navigate("/");
     } catch (err) {
